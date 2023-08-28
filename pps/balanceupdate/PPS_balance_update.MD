@@ -44,7 +44,7 @@ WHERE commit_timestamp>=TIMESTAMP("2023-01-01")
 2692164
 ```
 ### Workflow (Sequence Diagram)
-![uml](http://www.plantuml.com/plantuml/svg/dP6nJiGm44JxV4LmJKJl0Xs7hg2Wf8uSUmX6pjhiseZyFKu84aKKeUiiQzxJpkv9ik5Sfj3Sv3TCQ5CmdXfbKkgyHDNThy_CXiJOx2Dr8oUhTAi4vDhyHQhPZrJK3VhFjzBAau2phbWVu4Pm3yeytxQG7f_rtKiiR56Ta2x54C3TUnnsPGpZz7_8L8OxAKD5rfdF9XYoU4dEP5mMja9RPgzmmBYvj8qaPK9paDcRzAE0P_tgoPtd9wT_gb-MvkewbPULVWZB3kPdut2bQE4V2pCeRsiv51tSj9vq-3MSGAvCuHi0)
+![uml](https://www.plantuml.com/plantuml/svg/fP8zJyCm48Pt_uhWcOZT0of57HWOcIF7VWb6xjdSsOZyUvpIeKXHXCeIMT7xFBgFsqcnNEengfloXYEw76qWfMtEVP2a-_lJix0biQw4HFt4sMdJQG7vhdoHLkkHXlhHNFpMHWSIS34D6oBy11v0XUVR3ZBWixq7IPKTcXFIvnGZk7zFuwgCORtv2vdhU2TrRCYfvhsDbXnUihS5XuLjq3cprd34T7OPbqZg4MeZirRfHmNFvZMGtyzFtloqVbWwrshYL7DtaRVnEdsGa_4XBdEPdws7lawqy8-L6LJEezeKRUovhNdyjo5pSX21_tKoMe6yshLFEzvl)
 
 * Multiple read queries before the insert of balance (see sequence diagram). we potentially can remove findById. 
 * tx_balance_v2_udx prevent concurrent write, we might want to analyze if that is cost effective comparing holding a "ledger_entry" lock
@@ -91,8 +91,14 @@ We can make `tx_balance(public_ledger_entry_id)` and switch application to use t
 
 ### Weak Entity Schema Design
 tx_balance, tx_process_ledger_entry, tx_entry_details are weak entity to ledger_entry (i.e. 1-1 mapping to ledger_entry)
-We can design those table's primary key as ledger_entry_id with pre/post-fix so there will be no need to an extra unique index.
-
+We can design those table's primary key as ledger_entry_id with pre/post-fix and get rid of index of ledger_entry_id
+```agsl
+-- current --
+public_ledger_entry_id, balance_id
+le_302c15fa49804b03a210e78a21e4f338, bl_5078aa78b0254845a5f2f9f101
+-- target --
+le_302c15fa49804b03a210e78a21e4f338, bl_302c15fa49804b03a210e78a21e4f338
+```
 ### ledger_id design
 The relevant indices usually driven from ledger_id, which has low cardinality and second driving column monotonically increments. 
 If we observe hotspot (1 server cpu higher than others) during the spike we might want to change the ledger_id design to be prefixed rather postfixed with account id to spread the load. See schema [design best practice](https://cloud.google.com/spanner/docs/schema-design#primary-key-prevent-hotspots)
