@@ -1,0 +1,15 @@
+@startuml
+!theme plain
+"app-iso"->"app-transaction-grpc": "send txn"
+"app-transaction-grpc"->"db:transaction":"insert: tx_ledger_entry, es_event_source"
+"es-poller-job"->"db:transaction":"read: es_event_source"
+"es-poller-job"->"pub/sub":"send BalanceUpdateEvent"
+"pub/sub"->"app-transaction-leger-job":consume
+"app-transaction-leger-job"->"db:transaction":"query:findById:ledgerEntry"
+group transactional
+"app-transaction-leger-job"->"db:transaction":"query:isEntryAlreadyMade"
+"app-transaction-leger-job"->"db:transaction":"query:readCurrentBalance"
+"app-transaction-leger-job"->"db:transaction":"insert:tx_balance"
+"app-transaction-leger-job"->"db:transaction":"insert:tx_processed_ledger_entry"
+end
+@enduml
