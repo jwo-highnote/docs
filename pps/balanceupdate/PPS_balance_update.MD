@@ -2,6 +2,7 @@
 On Aug 17, we received 8.8K/m (146 tps) verification mainly from Pingpong traffic spike. This exceeded the limit app-txn-transaction service can handle and we saw traffic dropping. Ideally, we will want to support upto 200 tps as our upstream app-iso limit.
 
 ## Analysis
+
 ### Schema
 Indices are expensive for update. Indices with the same leading column (public_ledger_id) can be redundant and add unnecessary overhead for insert.  
 #### tx_ledger_entry
@@ -45,10 +46,10 @@ WHERE commit_timestamp>=TIMESTAMP("2023-01-01")
 ```
 ### Workflow (Sequence Diagram)
 ![uml](https://www.plantuml.com/plantuml/svg/fP8zJyCm48Pt_uhWcOZT0of57HWOcIF7VWb6xjdSsOZyUvpIeKXHXCeIMT7xFBgFsqcnNEengfloXYEw76qWfMtEVP2a-_lJix0biQw4HFt4sMdJQG7vhdoHLkkHXlhHNFpMHWSIS34D6oBy11v0XUVR3ZBWixq7IPKTcXFIvnGZk7zFuwgCORtv2vdhU2TrRCYfvhsDbXnUihS5XuLjq3cprd34T7OPbqZg4MeZirRfHmNFvZMGtyzFtloqVbWwrshYL7DtaRVnEdsGa_4XBdEPdws7lawqy8-L6LJEezeKRUovhNdyjo5pSX21_tKoMe6yshLFEzvl)
-
-* Multiple read queries before the insert of balance (see sequence diagram). we potentially can remove findById. 
-* tx_balance_v2_udx prevent concurrent write, we might want to analyze if that is cost effective comparing holding a "ledger_entry" lock
-* tx_process_ledger_entries seems hold information can be derived from tx_balance. Its additional value is the unique index on ledger_entry_id to ensure idempotent.
+Notice that:
+* Multiple read queries before the insert of balance (see sequence diagram). we potentially can eliminate them with a slightly different approach. 
+* tx_process_ledger_entries holds information similar to tx_balance and feels redundant.
+* It has an unique index on ledger_entry_id to ensure idempotent. This table has to participate in the same transaction as tx_balance so its naming feels to broad.
 
 # Proposals
 ## App Optimization
